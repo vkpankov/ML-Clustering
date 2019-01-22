@@ -46,7 +46,7 @@ namespace ML_Clustering
                 }
 
                 IFormatter formatter = new BinaryFormatter();
-                Stream stream = new FileStream(@"sparsematrix_cache.bin", FileMode.Create, FileAccess.Write);
+                Stream stream = new FileStream(cacheFileName, FileMode.Create, FileAccess.Write);
 
                 formatter.Serialize(stream, data);
                 stream.Close();
@@ -56,7 +56,7 @@ namespace ML_Clustering
         
         static List<int> GetClusters(Matrix<double> data, int itCount, int noUpdateCount)
         {
-            AffinityPropagation ap = new AffinityPropagation(data, true);
+            AffinityPropagation ap = new AffinityPropagation(data);
             int prevExemplarsCount = 0;
             int n = 0;
             for (int i = 0; i < itCount && n < noUpdateCount; i++)
@@ -119,11 +119,8 @@ namespace ML_Clustering
 
         static void Main(string[] args)
         {
-
-
             var inputData = LoadData(196591, "Gowalla_edges.txt");
             var finalExemplars = GetClusters(inputData, 300, 200);
-
 
             var userPlaces = LoadUserPlacesList("Gowalla_totalCheckins.txt");
             var clusterRecommendedPlaces = BuildClusterRecommendations(finalExemplars, userPlaces);
@@ -145,7 +142,6 @@ namespace ML_Clustering
             Console.WriteLine($"Recommended: {totalRecommended}, in checkins: {totalRecommendedInCheckins}, {prec}%");
 
             Console.ReadKey();
-
 
         }
     }
