@@ -22,10 +22,8 @@ namespace ML_Clustering
             A = S.Multiply(0.000000000001);
         }
         
-        public void IterateR(double damping = 0.7)
+        public void IterateR(double damping = 0.9)
         {
-            List<string> outInfo = new List<string>();
-            Random rnd = new Random();
             for (int i = 0; i < S.RowCount; i++)
             {
                 var curRow = S.Row(i);
@@ -52,7 +50,7 @@ namespace ML_Clustering
                 }
             }
         }
-        public void IterateA(double damping = 0.7)
+        public void IterateA(double damping = 0.9)
         {
             var Rt = R.Transpose();
             for(int i = 0; i<S.RowCount; i++)
@@ -64,12 +62,11 @@ namespace ML_Clustering
                     if (j.Item1 != i)
                         colSum += Math.Max(0, j.Item2);
                 }
-                double rkk = curRow[i];
                 foreach (var j in curRow.EnumerateIndexed(Zeros.AllowSkip))
                 {
                     if (j.Item1 != i)
                     {
-                        A[i, j.Item1] = damping * A[i, j.Item1] + (1 - damping) * Math.Min(0, rkk + colSum - Math.Max(0, j.Item2));
+                        A[i, j.Item1] = damping * A[i, j.Item1] + (1 - damping) * Math.Min(0, curRow[i] + colSum - Math.Max(0, j.Item2));
                     }
                 }
                 A[i, i] = damping * A[i, i] + (1 - damping) * colSum;
