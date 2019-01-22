@@ -54,7 +54,7 @@ namespace ML_Clustering
             return data;
         }
         
-        static List<int> GetClusters(Matrix<double> data, int itCount, int noUpdateCount)
+        static List<int> GetClusters(Matrix<double> data, int itCount, int noUpdateCount, double damping)
         {
             AffinityPropagation ap = new AffinityPropagation(data);
             int prevExemplarsCount = 0;
@@ -62,8 +62,8 @@ namespace ML_Clustering
             for (int i = 0; i < itCount && n < noUpdateCount; i++)
             {
                 int startTime = Environment.TickCount;
-                ap.IterateR(0.95);
-                ap.IterateA(0.95);
+                ap.IterateR(damping);
+                ap.IterateA(damping);
                 var exemplars = ap.GetExemplars().ToList();
                 var exCount = exemplars.Distinct().Count();
                 if (prevExemplarsCount == exCount)
@@ -120,9 +120,10 @@ namespace ML_Clustering
         static void Main(string[] args)
         {
             var inputData = LoadData(196591, "Gowalla_edges.txt");
-            var finalExemplars = GetClusters(inputData, 300, 200);
-
             var userPlaces = LoadUserPlacesList("Gowalla_totalCheckins.txt");
+
+            var finalExemplars = GetClusters(inputData, 2000, 200, 0.95);
+
             var clusterRecommendedPlaces = BuildClusterRecommendations(finalExemplars, userPlaces);
 
             int totalRecommendedInCheckins = 0;
