@@ -76,16 +76,10 @@ namespace ML_Clustering
             return ap.GetExemplars();
         }
 
-        static void Main(string[] args)
+        static Dictionary<int, HashSet<int>> LoadUserPlacesList(string checkinsFileName)
         {
-
             Dictionary<int, HashSet<int>> userPlaces = new Dictionary<int, HashSet<int>>();
-
-            var inputData = LoadData(196591, "Gowalla_edges.txt");
-            var finalExemplars = GetClusters(inputData, 300, 200);
-
-            //EVAL
-            List<string> checkins = File.ReadAllLines(@"Gowalla_totalCheckins.txt").ToList();
+            List<string> checkins = File.ReadAllLines(checkinsFileName).ToList();
             for (int i = 0; i < checkins.Count; i++)
             {
                 string[] str = checkins[i].Split('\t');
@@ -96,11 +90,15 @@ namespace ML_Clustering
                 userPlaces[user].Add(place);
 
             }
+            return userPlaces;
+        }
 
+        static Dictionary<int, List<int>> BuildClusterRecommendations(List<int> exemplars, Dictionary<int, HashSet<int>> userPlaces, int maxCountInCluster = 10)
+        {
             Dictionary<int, List<int>> clusterRecommendedPlaces = new Dictionary<int, List<int>>();
-            for (int i = 0; i < finalExemplars.Count; i++)
+            for (int i = 0; i < exemplars.Count; i++)
             {
-                var userExemplar = finalExemplars[i];
+                var userExemplar = exemplars[i];
                 if (!clusterRecommendedPlaces.ContainsKey(userExemplar))
                     clusterRecommendedPlaces[userExemplar] = new List<int>();
                 if (userPlaces.ContainsKey(i))
@@ -116,10 +114,19 @@ namespace ML_Clustering
                         select g.Key;
                 clusterRecommendedPlaces[cel.Key] = q.Take(10).ToList();
             }
+            return clusterRecommendedPlaces;
+        }
+
+        static void Main(string[] args)
+        {
 
 
-            Vector<double> recommendPrec = Vector<double>.Build.Dense(userPlaces.Count);
-            int k = 0;
+            var inputData = LoadData(196591, "Gowalla_edges.txt");
+            var finalExemplars = GetClusters(inputData, 300, 200);
+
+
+            var userPlaces = LoadUserPlacesList("Gowalla_totalCheckins.txt");
+            var clusterRecommendedPlaces = BuildClusterRecommendations(finalExemplars, userPlaces);
 
             int totalRecommendedInCheckins = 0;
             int totalRecommended = 0;
