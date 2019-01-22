@@ -19,48 +19,47 @@ namespace ML_Clustering
     class Program
     {
 
-
-        static void Main(string[] args)
+        static Matrix<double> LoadData(int matrixSize, string fileName, string cacheFileName= "sparsematrix_cache.bin")
         {
+            List<string> strData = File.ReadAllLines(fileName).ToList();
+            Matrix<double> data = Matrix<double>.Build.Sparse(matrixSize, matrixSize);
 
-            List<string> strData = File.ReadAllLines(@"C:\Users\vkpankov\Documents\Visual Studio 2017\Projects\ML-Clustering\ML-Clustering\bin\Debug\Gowalla_edges.txt").ToList();
-            Random rnd = new Random();
-            Matrix<double> inputData = Matrix<double>.Build.Sparse(196591, 196591);
-            Dictionary<int, HashSet<int>> userPlaces = new Dictionary<int, HashSet<int>>();
-
-
-            if (File.Exists("sparsematrix_cache.bin"))
+            if (File.Exists(cacheFileName))
             {
-                using (Stream inStream = new FileStream(@"sparsematrix_cache.bin", FileMode.Open, FileAccess.Read))
+                using (Stream inStream = new FileStream(cacheFileName, FileMode.Open, FileAccess.Read))
                 {
                     IFormatter bf = new BinaryFormatter();
-                    inputData = (SparseMatrix)bf.Deserialize(inStream);
+                    data = (SparseMatrix)bf.Deserialize(inStream);
                 }
             }
             else
             {
+                Random rnd = new Random();
                 for (int i = 0; i < strData.Count; i++)
                 {
                     string[] str = strData[i].Split('\t');
                     int row = Int32.Parse(str[0]);
                     int col = Int32.Parse(str[1]);
-                    double rand = 1e-15  * rnd.NextDouble();
-                    inputData[row, col] = 1 + rand;
-                    inputData[row, row] = -1 + rand;
+                    double rand = 1e-15 * rnd.NextDouble();
+                    data[row, col] = 1 + rand;
+                    data[row, row] = -1 + rand;
                 }
 
                 IFormatter formatter = new BinaryFormatter();
                 Stream stream = new FileStream(@"sparsematrix_cache.bin", FileMode.Create, FileAccess.Write);
 
-                formatter.Serialize(stream, inputData);
+                formatter.Serialize(stream, data);
                 stream.Close();
             }
-
-      
-            AffinityPropagation ap = new AffinityPropagation(inputData, true);
+            return data;
+        }
+        
+        static List<int> GetClusters(Matrix<double> data, int itCount, int noUpdateCount)
+        {
+            AffinityPropagation ap = new AffinityPropagation(data, true);
             int prevExemplarsCount = 0;
             int n = 0;
-            for (int i = 0; i < 300 && n < 200; i++)
+            for (int i = 0; i < itCount && n < noUpdateCount; i++)
             {
                 int startTime = Environment.TickCount;
                 ap.IterateR(0.95);
@@ -74,10 +73,19 @@ namespace ML_Clustering
 
                 Console.WriteLine($"Iteration: {i}, exemplars count: {exCount}, time: {endTime - startTime}");
             }
+            return ap.GetExemplars();
+        }
 
-            var finalExemplars = ap.GetExemplars().ToList();
+        static void Main(string[] args)
+        {
 
-            List<string> checkins = File.ReadAllLines(@"C:\Users\vkpankov\Documents\Visual Studio 2017\Projects\ML-Clustering\ML-Clustering\bin\Debug\Gowalla_totalCheckins.txt").ToList();
+            Dictionary<int, HashSet<int>> userPlaces = new Dictionary<int, HashSet<int>>();
+
+            var inputData = LoadData(196591, "Gowalla_edges.txt");
+            var finalExemplars = GetClusters(inputData, 300, 200);
+
+            //EVAL
+            List<string> checkins = File.ReadAllLines(@"Gowalla_totalCheckins.txt").ToList();
             for (int i = 0; i < checkins.Count; i++)
             {
                 string[] str = checkins[i].Split('\t');
